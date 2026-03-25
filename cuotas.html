@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Tesorería">
+<title>Tesorería</title>
+<style>
+  :root {
+    --warm-primary: #C0622A;
+    --success: #3B6D11;
+    --success-light: #EAF3DE;
+    --danger: #A32D2D;
+    --danger-light: #FCEBEB;
+    --pending: #854F0B;
+    --pending-light: #FAEEDA;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f5f5;
+    --text-primary: #1a1a1a;
+    --text-secondary: #666666;
+    --border: rgba(0,0,0,0.12);
+    --border-med: rgba(0,0,0,0.2);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    background-color: #f5ede3;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(192,98,42,0.13) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(192,98,42,0.10) 0%, transparent 60%),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c0622a' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .app { max-width: 420px; margin: 0 auto; padding-bottom: 80px; }
+  .topbar { background: var(--warm-primary); color: white; padding: 16px 20px 12px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: flex-start; }
+  .topbar-text h1 { font-size: 17px; font-weight: 600; }
+  .topbar-text p { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+  .btn-edit-title { background: rgba(255,255,255,0.2); border: none; border-radius: 6px; color: white; font-size: 12px; padding: 4px 8px; cursor: pointer; }
+  .tabs { display: flex; background: var(--warm-primary); padding: 0 20px; }
+  .tab-btn { flex: 1; background: none; border: none; color: rgba(255,255,255,0.65); font-size: 13px; font-weight: 500; padding: 10px 4px; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+  .tab-btn.active { color: white; border-bottom-color: white; }
+  .section { display: none; padding: 16px; }
+  .section.active { display: block; }
+  .card { background: rgba(255,255,255,0.92); border-radius: var(--radius-lg); border: 0.5px solid var(--border); padding: 14px 16px; margin-bottom: 12px; backdrop-filter: blur(4px); }
+  .resumen-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .metric { background: rgba(255,255,255,0.85); border-radius: var(--radius-md); padding: 12px; }
+  .metric .label { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+  .metric .value { font-size: 20px; font-weight: 600; color: var(--text-primary); }
+  .metric.saldo .value { color: var(--success); }
+  .metric.gastos-total .value { color: var(--danger); }
+  .btn-primary { background: var(--warm-primary); color: white; border: none; border-radius: var(--radius-md); padding: 10px 18px; font-size: 14px; font-weight: 500; cursor: pointer; width: 100%; }
+  .btn-secondary { background: none; color: var(--warm-primary); border: 1px solid var(--warm-primary); border-radius: var(--radius-md); padding: 8px 14px; font-size: 13px; font-weight: 500; cursor: pointer; }
+  .btn-sm { background: none; border: 0.5px solid var(--border-med); border-radius: var(--radius-md); padding: 5px 10px; font-size: 12px; cursor: pointer; color: var(--text-secondary); }
+  .btn-danger { background: none; color: var(--danger); border: 1px solid var(--danger); border-radius: var(--radius-md); padding: 4px 8px; font-size: 11px; cursor: pointer; }
+  .btn-edit { background: none; color: #185FA5; border: 1px solid #185FA5; border-radius: var(--radius-md); padding: 4px 8px; font-size: 11px; cursor: pointer; }
+  .input-row { margin-bottom: 12px; }
+  .input-row label { font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px; }
+  .input-row input, .input-row select { width: 100%; padding: 9px 12px; font-size: 14px; border: 0.5px solid var(--border-med); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary); }
+  .participante-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .participante-item:last-child { border-bottom: none; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+  .avatar.ga { background: var(--pending-light); color: var(--pending); }
+  .avatar.gb { background: #E6F1FB; color: #185FA5; }
+  .p-info { flex: 1; min-width: 0; }
+  .p-name { font-size: 14px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .p-grupo { font-size: 11px; color: var(--text-secondary); }
+  .p-actions { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+  .badge { font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 20px; flex-shrink: 0; cursor: pointer; }
+  .badge.pagado { background: var(--success-light); color: var(--success); }
+  .badge.pendiente { background: var(--danger-light); color: var(--danger); }
+  .mes-selector { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .mes-chip { padding: 5px 10px; border-radius: 20px; font-size: 12px; border: 0.5px solid var(--border-med); background: rgba(255,255,255,0.8); color: var(--text-secondary); cursor: pointer; }
+  .mes-chip.selected { background: var(--warm-primary); color: white; border-color: var(--warm-primary); }
+  .gasto-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .gasto-item:last-child { border-bottom: none; }
+  .gasto-icon { width: 34px; height: 34px; border-radius: var(--radius-md); background: var(--danger-light); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .g-info { flex: 1; }
+  .g-desc { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+  .g-date { font-size: 11px; color: var(--text-secondary); }
+  .g-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .g-monto { font-size: 14px; font-weight: 500; color: var(--danger); }
+  .g-btns { display: flex; gap: 4px; }
+  .empty-state { text-align: center; padding: 32px 16px; color: var(--text-secondary); font-size: 14px; }
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; align-items: flex-end; justify-content: center; }
+  .modal-bg.open { display: flex; }
+  .modal { background: var(--bg-primary); border-radius: 16px 16px 0 0; padding: 20px; width: 100%; max-width: 420px; max-height: 85vh; overflow-y: auto; }
+  .modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.95); border-top: 0.5px solid var(--border); display: flex; backdrop-filter: blur(8px); }
+  .nav-btn { flex: 1; background: none; border: none; padding: 12px 4px 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--text-secondary); font-size: 10px; }
+  .nav-btn.active { color: var(--warm-primary); }
+  .nav-icon { font-size: 20px; }
+  .section-title { font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 8px 18px; border-radius: 20px; font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 200; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="topbar-text">
+      <h1 id="app-titulo">Tesorería Escolar</h1>
+      <p id="app-subtitulo">2026 · Datos guardados en este dispositivo</p>
+    </div>
+    <button class="btn-edit-title" onclick="openModal('modal-config')">⚙️ Editar</button>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('resumen')">Resumen</button>
+    <button class="tab-btn" onclick="showTab('participantes')">Participantes</button>
+    <button class="tab-btn" onclick="showTab('gastos')">Gastos</button>
+  </div>
+
+  <div id="tab-resumen" class="section active">
+    <div class="resumen-grid" style="margin-top:4px;">
+      <div class="metric"><div class="label">Total recaudado</div><div class="value" id="m-recaudado">$0</div></div>
+      <div class="metric gastos-total"><div class="label">Total gastos</div><div class="value" id="m-gastos">$0</div></div>
+      <div class="metric saldo" style="grid-column:1/-1;"><div class="label">Saldo disponible</div><div class="value" id="m-saldo">$0</div></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Estado del mes</div>
+      <div class="mes-selector" id="mes-selector-resumen"></div>
+      <div id="resumen-mes-detalle" style="font-size:13px;color:var(--text-secondary);">Selecciona un mes para ver el detalle.</div>
+    </div>
+  </div>
+
+  <div id="tab-participantes" class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;margin-top:4px;">
+      <div class="section-title" style="margin-bottom:0;">Lista</div>
+      <button class="btn-secondary" onclick="openModal('modal-participante')">+ Agregar</button>
+    </div>
+    <div class="card" style="margin-bottom:10px;">
+      <div class="mes-selector" id="mes-selector-pagos"></div>
+    </div>
+    <div class="card" id="lista-participantes">
+      <div class="empty-state">Todavía no hay participantes.<br>Agregá el primero.</div>
+    </div>
+  </div>
+
+  <div id="tab-gastos" class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;margin-top:4px;">
+      <div class="section-title" style="margin-bottom:0;">Registro de gastos</div>
+      <button class="btn-secondary" onclick="openModal('modal-gasto')">+ Agregar</button>
+    </div>
+    <div class="card" id="lista-gastos">
+      <div class="empty-state">Sin gastos registrados aún.</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIG -->
+<div class="modal-bg" id="modal-config">
+  <div class="modal">
+    <h3>Configuración</h3>
+    <div class="input-row"><label>Título</label><input type="text" id="cfg-titulo" placeholder="Ej: Tesorería Escolar"></div>
+    <div class="input-row"><label>Año</label><input type="number" id="cfg-anio" placeholder="2026"></div>
+    <div class="input-row"><label>Nombre Grupo A</label><input type="text" id="cfg-nombre-a" placeholder="Ej: Part-time"></div>
+    <div class="input-row"><label>Monto mensual Grupo A ($)</label><input type="number" id="cfg-monto-a" placeholder="2500"></div>
+    <div class="input-row"><label>Nombre Grupo B</label><input type="text" id="cfg-nombre-b" placeholder="Ej: Tiempo completo"></div>
+    <div class="input-row"><label>Monto mensual Grupo B ($)</label><input type="number" id="cfg-monto-b" placeholder="5000"></div>
+    <button class="btn-primary" onclick="guardarConfig()">Guardar</button>
+    <button class="btn-sm" style="margin-top:10px;width:100%;" onclick="closeModal('modal-config')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL PARTICIPANTE -->
+<div class="modal-bg" id="modal-participante">
+  <div class="modal">
+    <h3 id="modal-p-titulo">Nuevo participante</h3>
+    <div class="input-row"><label>Nombre completo</label><input type="text" id="p-nombre" placeholder="Ej: María García"></div>
+    <div class="input-row">
+      <label>Grupo</label>
+      <select id="p-grupo">
+        <option value="A" id="opt-grupo-a">Grupo A</option>
+        <option value="B" id="opt-grupo-b">Grupo B</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="guardarParticipante()">Guardar</button>
+    <button class="btn-sm" style="margin-top:10px;width:100%;" onclick="closeModal('modal-participante')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL GASTO -->
+<div class="modal-bg" id="modal-gasto">
+  <div class="modal">
+    <h3 id="modal-g-titulo">Nuevo gasto</h3>
+    <div class="input-row"><label>Descripción</label><input type="text" id="g-desc" placeholder="Ej: Resmas de papel"></div>
+    <div class="input-row">
+      <label>Categoría</label>
+      <select id="g-cat">
+        <option>Material de oficina</option>
+        <option>Limpieza</option>
+        <option>Eventos</option>
+        <option>Mantenimiento</option>
+        <option>Otro</option>
+      </select>
+    </div>
+    <div class="input-row"><label>Monto ($)</label><input type="number" id="g-monto" placeholder="0"></div>
+    <div class="input-row"><label>Fecha</label><input type="date" id="g-fecha"></div>
+    <button class="btn-primary" onclick="guardarGasto()">Guardar</button>
+    <button class="btn-sm" style="margin-top:10px;width:100%;" onclick="closeModal('modal-gasto')">Cancelar</button>
+  </div>
+</div>
+
+<div class="bottom-nav">
+  <button class="nav-btn active" id="nav-resumen" onclick="showTab('resumen')"><span class="nav-icon">📊</span>Resumen</button>
+  <button class="nav-btn" id="nav-participantes" onclick="showTab('participantes')"><span class="nav-icon">👥</span>Participantes</button>
+  <button class="nav-btn" id="nav-gastos" onclick="showTab('gastos')"><span class="nav-icon">💸</span>Gastos</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const EMOJI_CATS = {"Material de oficina":"📄","Limpieza":"🧹","Eventos":"🎉","Mantenimiento":"🔧","Otro":"📦"};
+const STORAGE_KEY = 'tesoreria_v2';
+
+function loadState() {
+  try { const s = localStorage.getItem(STORAGE_KEY); if(s) return JSON.parse(s); } catch(e) {}
+  return {
+    participantes: [], gastos: [], pagos: {}, mesActivo: "Marzo",
+    config: { titulo: "Tesorería Escolar", anio: 2026, nombreA: "Part-time", montoA: 2500, nombreB: "Tiempo completo", montoB: 5000 }
+  };
+}
+function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {} }
+
+let state = loadState();
+let editingPid = null;
+let editingGid = null;
+
+function fmt(n){ return '$' + Math.round(n).toLocaleString('es-AR'); }
+function initials(name){ return name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function showTab(tab) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  ['resumen','participantes','gastos'].forEach((t,i)=>{ if(t===tab) document.querySelectorAll('.tab-btn')[i].classList.add('active'); });
+  document.getElementById('nav-'+tab).classList.add('active');
+}
+
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+function openConfig() {
+  const c = state.config;
+  document.getElementById('cfg-titulo').value = c.titulo;
+  document.getElementById('cfg-anio').value = c.anio;
+  document.getElementById('cfg-nombre-a').value = c.nombreA;
+  document.getElementById('cfg-monto-a').value = c.montoA;
+  document.getElementById('cfg-nombre-b').value = c.nombreB;
+  document.getElementById('cfg-monto-b').value = c.montoB;
+  openModal('modal-config');
+}
+
+function guardarConfig() {
+  state.config.titulo = document.getElementById('cfg-titulo').value.trim() || state.config.titulo;
+  state.config.anio = parseInt(document.getElementById('cfg-anio').value) || state.config.anio;
+  state.config.nombreA = document.getElementById('cfg-nombre-a').value.trim() || state.config.nombreA;
+  state.config.montoA = parseFloat(document.getElementById('cfg-monto-a').value) || state.config.montoA;
+  state.config.nombreB = document.getElementById('cfg-nombre-b').value.trim() || state.config.nombreB;
+  state.config.montoB = parseFloat(document.getElementById('cfg-monto-b').value) || state.config.montoB;
+  saveState();
+  closeModal('modal-config');
+  showToast('Configuración guardada ✓');
+  render();
+}
+
+function buildMesSelectors() {
+  ['mes-selector-resumen','mes-selector-pagos'].forEach(cid => {
+    const el = document.getElementById(cid);
+    el.innerHTML = '';
+    MESES.forEach(m => {
+      const chip = document.createElement('button');
+      chip.className = 'mes-chip' + (m===state.mesActivo?' selected':'');
+      chip.textContent = m;
+      chip.onclick = () => { state.mesActivo = m; saveState(); render(); };
+      el.appendChild(chip);
+    });
+  });
+}
+
+function abrirModalParticipante(pid) {
+  editingPid = pid || null;
+  if (pid) {
+    const p = state.participantes.find(x=>x.id===pid);
+    document.getElementById('modal-p-titulo').textContent = 'Editar participante';
+    document.getElementById('p-nombre').value = p.nombre;
+    document.getElementById('p-grupo').value = p.grupo;
+  } else {
+    document.getElementById('modal-p-titulo').textContent = 'Nuevo participante';
+    document.getElementById('p-nombre').value = '';
+    document.getElementById('p-grupo').value = 'A';
+  }
+  openModal('modal-participante');
+}
+
+function guardarParticipante() {
+  const nombre = document.getElementById('p-nombre').value.trim();
+  const grupo = document.getElementById('p-grupo').value;
+  if (!nombre) return;
+  if (editingPid) {
+    const p = state.participantes.find(x=>x.id===editingPid);
+    p.nombre = nombre; p.grupo = grupo;
+    showToast('Participante actualizado ✓');
+  } else {
+    state.participantes.push({ id: Date.now(), nombre, grupo });
+    showToast('Participante guardado ✓');
+  }
+  saveState();
+  closeModal('modal-participante');
+  render();
+}
+
+function eliminarParticipante(pid) {
+  if (!confirm('¿Eliminar este participante?')) return;
+  state.participantes = state.participantes.filter(p=>p.id!==pid);
+  Object.keys(state.pagos).forEach(k=>{ if(k.startsWith(pid+'_')) delete state.pagos[k]; });
+  saveState();
+  showToast('Participante eliminado');
+  render();
+}
+
+function togglePago(pid) {
+  const key = pid + '_' + state.mesActivo;
+  state.pagos[key] = !state.pagos[key];
+  saveState();
+  render();
+}
+
+function abrirModalGasto(gid) {
+  editingGid = gid || null;
+  if (gid) {
+    const g = state.gastos.find(x=>x.id===gid);
+    document.getElementById('modal-g-titulo').textContent = 'Editar gasto';
+    document.getElementById('g-desc').value = g.desc;
+    document.getElementById('g-cat').value = g.cat;
+    document.getElementById('g-monto').value = g.monto;
+    document.getElementById('g-fecha').value = g.fecha;
+  } else {
+    document.getElementById('modal-g-titulo').textContent = 'Nuevo gasto';
+    document.getElementById('g-desc').value = '';
+    document.getElementById('g-monto').value = '';
+    document.getElementById('g-fecha').value = new Date().toISOString().split('T')[0];
+  }
+  openModal('modal-gasto');
+}
+
+function guardarGasto() {
+  const desc = document.getElementById('g-desc').value.trim();
+  const cat = document.getElementById('g-cat').value;
+  const monto = parseFloat(document.getElementById('g-monto').value) || 0;
+  const fecha = document.getElementById('g-fecha').value || new Date().toISOString().split('T')[0];
+  if (!desc || !monto) return;
+  if (editingGid) {
+    const g = state.gastos.find(x=>x.id===editingGid);
+    g.desc=desc; g.cat=cat; g.monto=monto; g.fecha=fecha;
+    showToast('Gasto actualizado ✓');
+  } else {
+    state.gastos.push({ id: Date.now(), desc, cat, monto, fecha });
+    showToast('Gasto guardado ✓');
+  }
+  saveState();
+  closeModal('modal-gasto');
+  render();
+}
+
+function eliminarGasto(gid) {
+  if (!confirm('¿Eliminar este gasto?')) return;
+  state.gastos = state.gastos.filter(g=>g.id!==gid);
+  saveState();
+  showToast('Gasto eliminado');
+  render();
+}
+
+function render() {
+  const c = state.config;
+  document.getElementById('app-titulo').textContent = c.titulo;
+  document.getElementById('app-subtitulo').textContent = c.anio + ' · Datos guardados en este dispositivo';
+  document.title = c.titulo;
+  document.getElementById('opt-grupo-a').textContent = 'Grupo A — ' + c.nombreA + ' (' + fmt(c.montoA) + '/mes)';
+  document.getElementById('opt-grupo-b').textContent = 'Grupo B — ' + c.nombreB + ' (' + fmt(c.montoB) + '/mes)';
+
+  buildMesSelectors();
+
+  let totalRecaudado = 0;
+  state.participantes.forEach(p => {
+    MESES.forEach(m => { if(state.pagos[p.id+'_'+m]) totalRecaudado += (p.grupo==='A'?c.montoA:c.montoB); });
+  });
+  const totalGastos = state.gastos.reduce((a,g)=>a+g.monto,0);
+  const saldo = totalRecaudado - totalGastos;
+  document.getElementById('m-recaudado').textContent = fmt(totalRecaudado);
+  document.getElementById('m-gastos').textContent = fmt(totalGastos);
+  document.getElementById('m-saldo').textContent = fmt(saldo);
+  document.getElementById('m-saldo').style.color = saldo>=0?'var(--success)':'var(--danger)';
+
+  let pagadosMes=0, pendientesMes=0, recMes=0;
+  state.participantes.forEach(p => {
+    if(state.pagos[p.id+'_'+state.mesActivo]){ pagadosMes++; recMes+=(p.grupo==='A'?c.montoA:c.montoB); }
+    else pendientesMes++;
+  });
+  const det = document.getElementById('resumen-mes-detalle');
+  det.innerHTML = state.participantes.length===0
+    ? 'Agregá participantes para ver el detalle.'
+    : `<b style="color:var(--success)">${pagadosMes} pagaron</b> · <b style="color:var(--danger)">${pendientesMes} pendientes</b><br><span style="font-size:12px;margin-top:4px;display:block;">Recaudado en ${state.mesActivo}: <b>${fmt(recMes)}</b></span>`;
+
+  const lista = document.getElementById('lista-participantes');
+  lista.innerHTML = state.participantes.length===0
+    ? '<div class="empty-state">Todavía no hay participantes.<br>Agregá el primero.</div>'
+    : state.participantes.map(p => {
+        const pagado = !!state.pagos[p.id+'_'+state.mesActivo];
+        const nombreGrupo = p.grupo==='A' ? c.nombreA : c.nombreB;
+        const monto = p.grupo==='A' ? c.montoA : c.montoB;
+        return `<div class="participante-item">
+          <div class="avatar ${p.grupo==='A'?'ga':'gb'}">${initials(p.nombre)}</div>
+          <div class="p-info">
+            <div class="p-name">${p.nombre}</div>
+            <div class="p-grupo">Grupo ${p.grupo} · ${nombreGrupo} · ${fmt(monto)}/mes</div>
+          </div>
+          <div class="p-actions">
+            <span class="badge ${pagado?'pagado':'pendiente'}" onclick="togglePago(${p.id})">${pagado?'✓ Pagado':'Pendiente'}</span>
+            <div style="display:flex;gap:4px;">
+              <button class="btn-edit" onclick="abrirModalParticipante(${p.id})">Editar</button>
+              <button class="btn-danger" onclick="eliminarParticipante(${p.id})">Eliminar</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+
+  const lg = document.getElementById('lista-gastos');
+  lg.innerHTML = state.gastos.length===0
+    ? '<div class="empty-state">Sin gastos registrados aún.</div>'
+    : [...state.gastos].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(g => {
+        const d = new Date(g.fecha+'T00:00:00');
+        const fechaStr = d.toLocaleDateString('es-AR',{day:'2-digit',month:'short'});
+        return `<div class="gasto-item">
+          <div class="gasto-icon">${EMOJI_CATS[g.cat]||'📦'}</div>
+          <div class="g-info"><div class="g-desc">${g.desc}</div><div class="g-date">${fechaStr} · ${g.cat}</div></div>
+          <div class="g-right">
+            <div class="g-monto">${fmt(g.monto)}</div>
+            <div class="g-btns">
+              <button class="btn-edit" onclick="abrirModalGasto(${g.id})">Editar</button>
+              <button class="btn-danger" onclick="eliminarGasto(${g.id})">Eliminar</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+}
+
+document.querySelector('.btn-edit-title').onclick = openConfig;
+document.getElementById('g-fecha').value = new Date().toISOString().split('T')[0];
+render();
+</script>
+</body>
+</html>
